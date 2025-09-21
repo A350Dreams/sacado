@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coffre-fort familial</title>
+    <title>Sacado</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
         
@@ -171,8 +171,8 @@
 
         .restore-btn { background-color: #2ecc71; }
         .restore-btn:hover { background-color: #27ae60; }
-        .delete-btn, .permanent-delete-btn { background-color: var(--danger-color); }
-        .delete-btn:hover, .permanent-delete-btn:hover { background-color: #c0392b; }
+        .delete-btn { background-color: var(--danger-color); }
+        .delete-btn:hover { background-color: #c0392b; }
         .view-btn { background-color: #3498db; }
         .view-btn:hover { background-color: #2980b9; }
 
@@ -199,7 +199,7 @@
     <main id="app-container">
         
         <section id="login-view" class="auth-card main-view">
-            <h2>Accéder à votre coffre-fort</h2>
+            <h2>Accéder à votre Sacado</h2>
             <form id="login-form">
                 <input type="email" id="email-input" placeholder="Adresse email" required>
                 <input type="password" id="password-input" placeholder="Mot de passe" required>
@@ -258,15 +258,14 @@
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-storage-compat.js"></script>
     
     <script>
         // --- Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyA-iFe6sL9tJNTxGNDe8AB9xFzWKLMRSv0",
-            authDomain: "sacadeau.firebaseapp.com",
-            projectId: "sacadeau",
-            storageBucket: "sacadeau.firebasestorage.app",
+            authDomain: "sacado.firebaseapp.com",
+            projectId: "sacado",
+            storageBucket: "sacado.appspot.com", // This is not used anymore
             messagingSenderId: "924039661276",
             appId: "1:924039661276:web:4256fb136497f3936e5619",
             measurementId: "G-RKSYH0Q55G"
@@ -274,7 +273,10 @@
         const firebaseApp = firebase.initializeApp(firebaseConfig);
         const firebaseAuth = firebaseApp.auth();
         const firestore = firebaseApp.firestore();
-        const firebaseStorage = firebaseApp.storage();
+
+        // --- Cloudinary Configuration ---
+        const CLOUDINARY_CLOUD_NAME = 'doehylsel'; // REPLACE with your Cloudinary Cloud Name
+        const CLOUDINARY_UPLOAD_PRESET = 'doehylsel'; // REPLACE with your upload preset name
 
         // --- Mappage des IDs d'utilisateur aux noms ---
         const allowedUserIds = {
@@ -381,7 +383,7 @@
         
         // --- Récupération des documents actifs (Firestore) ---
         function fetchDocuments(userId) {
-            if (activeUnsubscribe) activeUnsubscribe(); // Stop previous listener
+            if (activeUnsubscribe) activeUnsubscribe();
             activeUnsubscribe = firestore.collection('documents')
                 .where('userId', '==', userId)
                 .where('status', '==', 'active')
@@ -412,7 +414,7 @@
         
         // --- Récupération des documents supprimés (Firestore) ---
         function fetchBinDocuments(userId) {
-            if (binUnsubscribe) binUnsubscribe(); // Stop previous listener
+            if (binUnsubscribe) binUnsubscribe();
             binUnsubscribe = firestore.collection('documents')
                 .where('userId', '==', userId)
                 .where('status', '==', 'deleted')
@@ -430,7 +432,7 @@
                             <span class="document-name">${docData.documentName}</span>
                             <div class="document-actions">
                                 <button class="restore-btn" data-id="${docId}">Restaurer</button>
-                                <button class="permanent-delete-btn" data-id="${docId}" data-path="${docData.filePath}">Supprimer</button>
+                                <button class="delete-btn" data-id="${docId}">Supprimer</button>
                             </div>
                         `;
                         binDocumentsContainer.appendChild(li);
@@ -438,8 +440,8 @@
                     document.querySelectorAll('.restore-btn').forEach(btn => {
                         btn.addEventListener('click', (e) => restoreDocument(e.target.dataset.id));
                     });
-                    document.querySelectorAll('.permanent-delete-btn').forEach(btn => {
-                        btn.addEventListener('click', (e) => permanentlyDeleteDocument(e.target.dataset.id, e.target.dataset.path));
+                    document.querySelectorAll('.delete-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => deleteDocument(e.target.dataset.id));
                     });
                 });
         }
@@ -456,27 +458,8 @@
             await docRef.update({ status: 'active' });
             alert('Document restauré avec succès.');
         }
-
-        async function permanentlyDeleteDocument(docId, filePath) {
-            if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce document ? Cette action est irréversible.')) {
-                return;
-            }
-            
-            try {
-                const storageRef = firebaseStorage.ref(filePath);
-                await storageRef.delete();
-                
-                const docRef = firestore.collection('documents').doc(docId);
-                await docRef.delete();
-
-                alert('Document supprimé définitivement.');
-            } catch (error) {
-                console.error("Erreur de suppression:", error);
-                alert("Une erreur s'est produite lors de la suppression.");
-            }
-        }
-
-        // --- Téléchargement de documents (Cloud Storage & Firestore) ---
+        
+        // --- Téléchargement de documents (Cloudinary) ---
         uploadBtn.addEventListener('click', () => {
             const file = fileInput.files[0];
             if (!file) {
@@ -484,41 +467,43 @@
                 return;
             }
 
-            const userId = firebaseAuth.currentUser.uid;
-            const filePath = `${userId}/${file.name}-${Date.now()}`;
-            const storageRef = firebaseStorage.ref(filePath);
-            
-            const uploadTask = storageRef.put(file);
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
             uploadProgressContainer.classList.remove('hidden');
 
-            uploadTask.on('state_changed', 
-                snapshot => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    uploadProgressBar.style.width = progress + '%';
-                },
-                error => {
-                    console.error('Erreur lors du téléchargement du fichier :', error.message);
-                    alert('Échec du téléchargement du fichier.');
-                    uploadProgressContainer.classList.add('hidden');
-                    uploadProgressBar.style.width = '0%';
-                },
-                () => {
-                    uploadTask.snapshot.ref.getDownloadURL().then(async (downloadURL) => {
-                        await firestore.collection('documents').add({
-                            userId: userId,
-                            filePath: filePath,
-                            documentName: file.name,
-                            fileUrl: downloadURL,
-                            status: 'active',
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        alert('Document téléchargé avec succès !');
-                        fileInput.value = null;
-                        uploadProgressContainer.classList.add('hidden');
-                        uploadProgressBar.style.width = '0%';
-                    });
+            fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Cloudinary upload failed with status: ${response.status}`);
                 }
-            );
+                return response.json();
+            })
+            .then(async (data) => {
+                const userId = firebaseAuth.currentUser.uid;
+                
+                await firestore.collection('documents').add({
+                    userId: userId,
+                    documentName: file.name,
+                    fileUrl: data.secure_url,
+                    status: 'active',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert('Document téléchargé avec succès !');
+                fileInput.value = null;
+                uploadProgressContainer.classList.add('hidden');
+                uploadProgressBar.style.width = '0%';
+            })
+            .catch(error => {
+                console.error('Erreur lors du téléchargement du fichier:', error);
+                alert('Échec du téléchargement du fichier.');
+                uploadProgressContainer.classList.add('hidden');
+                uploadProgressBar.style.width = '0%';
+            });
         });
     </script>
 </body>
