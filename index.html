@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffre-fort familial de documents</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        #app-container {
+            width: 90%;
+            max-width: 700px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        .auth-card {
+            text-align: center;
+        }
+
+        h2 {
+            color: #444;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: calc(100% - 24px);
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #1abc9c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #16a085;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Styles du tableau de bord */
+        #dashboard-section header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        #logout-btn {
+            width: auto;
+            background-color: #e74c3c;
+        }
+
+        #logout-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .upload-area {
+            background-color: #f9f9f9;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .documents-list ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .documents-list li {
+            background-color: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .document-name {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <main id="app-container">
+        
+        <section id="login-section" class="auth-card">
+            <h2>Connectez-vous à votre coffre</h2>
+            <form id="login-form">
+                <input type="email" id="email-input" placeholder="Email" required>
+                <input type="password" id="password-input" placeholder="Mot de passe" required>
+                <button type="submit">Se connecter</button>
+                <p id="auth-error" class="error-message"></p>
+            </form>
+        </section>
+
+        <section id="dashboard-section" class="hidden">
+            <header>
+                <h2 id="welcome-message"></h2>
+                <button id="logout-btn">Se déconnecter</button>
+            </header>
+            
+            <div class="dashboard-content">
+                <div class="upload-area">
+                    <h3>Télécharger un nouveau document</h3>
+                    <input type="file" id="file-input">
+                    <button id="upload-btn">Télécharger</button>
+                </div>
+
+                <div class="documents-list">
+                    <h3>Vos documents</h3>
+                    <ul id="documents-container">
+                        </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Remplacez par votre URL et votre clé Supabase
+        const supabaseUrl = 'https://ohnpisirjghlbtfrfvyk.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obnBpc2lyamdobGJ0ZnJmdnlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg0ODAzNDIsImV4cCI6MjA3NDA1NjM0Mn0.CSKbLMmIQDNnHPvY4mpqtj36Dv3we--LfwZTQYoHEOI'; 
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // Éléments du DOM
+        const loginForm = document.getElementById('login-form');
+        const dashboardSection = document.getElementById('dashboard-section');
+        const loginSection = document.getElementById('login-section');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const logoutBtn = document.getElementById('logout-btn');
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        const documentsContainer = document.getElementById('documents-container');
+        const authError = document.getElementById('auth-error');
+
+        const allowedUserIds = {
+            '73a2455e-b9e7-462e-a245-37012e754bc1': 'Papa',
+            '4c0d3480-be4c-4d6a-b1ec-4f030841c382': 'Maman'
+        };
+
+        // Fonctions pour afficher/masquer les sections
+        function showDashboard(userName) {
+            loginSection.classList.add('hidden');
+            dashboardSection.classList.remove('hidden');
+            welcomeMessage.textContent = `Bienvenue, ${userName} !`;
+        }
+
+        function showLogin() {
+            loginSection.classList.remove('hidden');
+            dashboardSection.classList.add('hidden');
+        }
+
+        // Vérifier la session au chargement de la page
+        async function checkAuth() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+
+            if (error || !session) {
+                showLogin();
+                return;
+            }
+
+            const userId = session.user.id;
+            if (allowedUserIds[userId]) {
+                showDashboard(allowedUserIds[userId]);
+                fetchDocuments();
+            } else {
+                authError.textContent = 'Vous n\'êtes pas un utilisateur autorisé.';
+                supabase.auth.signOut();
+                showLogin();
+            }
+        }
+
+        // Gérer la connexion de l'utilisateur
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value;
+            const password = document.getElementById('password-input').value;
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                authError.textContent = 'Échec de la connexion. Veuillez vérifier vos identifiants.';
+                console.error('Erreur de connexion :', error.message);
+                return;
+            }
+
+            const userId = data.user.id;
+            if (allowedUserIds[userId]) {
+                showDashboard(allowedUserIds[userId]);
+                fetchDocuments();
+            } else {
+                authError.textContent = 'Vous n\'êtes pas un utilisateur autorisé.';
+                supabase.auth.signOut();
+                showLogin();
+            }
+        });
+
+        // Gérer la déconnexion de l'utilisateur
+        logoutBtn.addEventListener('click', async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('Erreur de déconnexion :', error.message);
+            }
+            showLogin();
+        });
+
+        // Récupérer et afficher les documents
+        async function fetchDocuments() {
+            const { data: documents, error } = await supabase
+                .from('documents')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Erreur lors de la récupération des documents :', error.message);
+                return;
+            }
+
+            documentsContainer.innerHTML = '';
+            documents.forEach(doc => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span class="document-name">${doc.document_name}</span>
+                    <a href="${getPublicUrl(doc.file_path)}" target="_blank">Voir</a>
+                `;
+                documentsContainer.appendChild(li);
+            });
+        }
+
+        // Gérer le téléchargement de fichiers
+        uploadBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Veuillez sélectionner un fichier à télécharger.');
+                return;
+            }
+
+            const { data: { session } } = await supabase.auth.getSession();
+            const userId = session.user.id;
+            const filePath = `${userId}/${file.name}-${Date.now()}`;
+
+            // Télécharger le fichier vers le stockage Supabase
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('your-document-bucket') // CHANGEZ CELA par le nom de votre bucket !
+                .upload(filePath, file);
+
+            if (uploadError) {
+                console.error('Erreur lors du téléchargement du fichier :', uploadError.message);
+                alert('Échec du téléchargement du fichier.');
+                return;
+            }
+
+            // Insérer un nouvel enregistrement dans la table des documents
+            const { error: insertError } = await supabase
+                .from('documents')
+                .insert({
+                    user_id: userId,
+                    file_path: filePath,
+                    document_name: file.name
+                });
+
+            if (insertError) {
+                console.error('Erreur lors de l\'enregistrement du document :', insertError.message);
+                alert('Échec de l\'enregistrement du document.');
+                return;
+            }
+
+            alert('Document téléchargé avec succès !');
+            fileInput.value = null; // Vider l'entrée
+            fetchDocuments(); // Rafraîchir la liste
+        });
+
+        function getPublicUrl(filePath) {
+            const { data } = supabase.storage
+                .from('your-document-bucket') // CHANGEZ CELA par le nom de votre bucket !
+                .getPublicUrl(filePath);
+            return data.publicUrl;
+        }
+
+        // Vérification initiale au chargement de la page
+        checkAuth();
+    </script>
+</body>
+</html>
