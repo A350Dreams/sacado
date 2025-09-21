@@ -3,38 +3,526 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coffre-fort familial de documents</title>
+    <title>sacado</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+        
+        :root {
+            --primary-color: #1abc9c;
+            --secondary-color: #34495e;
+            --background-color: #f0f2f5;
+            --card-background: #ffffff;
+            --text-color: #333;
+            --danger-color: #e74c3c;
+            --border-color: #ddd;
+            --progress-color: #3498db;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            color: #333;
+            color: var(--text-color);
         }
 
         #app-container {
             width: 90%;
-            max-width: 700px;
-            background-color: #ffffff;
+            max-width: 800px;
+            background-color: var(--card-background);
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            padding: 40px;
         }
 
-        .auth-card {
+        .auth-card, .main-view {
             text-align: center;
         }
 
         h2 {
-            color: #444;
+            color: var(--secondary-color);
+            font-weight: 600;
         }
 
+        /* Form & Button Styles */
         input[type="email"],
-        input[type="password"] {
+        input[type="password"],
+        #file-input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        #file-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
+            outline: none;
+        }
+
+        button {
+            padding: 12px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background-color: #16a085;
+        }
+
+        .error-message {
+            color: var(--danger-color);
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Dashboard & Bin Styles */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .header-buttons button {
+            width: auto;
+            margin-left: 10px;
+        }
+
+        #logout-btn, #logout-btn-bin {
+            background-color: var(--secondary-color);
+        }
+
+        #logout-btn:hover, #logout-btn-bin:hover {
+            background-color: #2c3e50;
+        }
+
+        .upload-area {
+            background-color: #f9f9f9;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #upload-btn {
+            margin-top: 15px;
+            width: auto;
+            min-width: 150px;
+        }
+
+        .document-list ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .document-list li {
+            background-color: #fafafa;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .document-name {
+            font-weight: 600;
+            flex-grow: 1;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .document-actions button, .document-actions a {
+            width: auto;
+            padding: 8px 12px;
+            font-size: 14px;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .restore-btn { background-color: #2ecc71; }
+        .restore-btn:hover { background-color: #27ae60; }
+        .delete-btn, .permanent-delete-btn { background-color: var(--danger-color); }
+        .delete-btn:hover, .permanent-delete-btn:hover { background-color: #c0392b; }
+        .view-btn { background-color: #3498db; }
+        .view-btn:hover { background-color: #2980b9; }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--progress-color);
+            width: 0;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <main id="app-container">
+        
+        <section id="login-view" class="auth-card main-view">
+            <h2>Accéder à votre sacado</h2>
+            <form id="login-form">
+                <input type="email" id="email-input" placeholder="Adresse email" required>
+                <input type="password" id="password-input" placeholder="Mot de passe" required>
+                <button type="submit">Se connecter</button>
+                <p id="auth-error" class="error-message"></p>
+            </form>
+        </section>
+
+        <section id="dashboard-view" class="hidden main-view">
+            <header class="header">
+                <h2 id="welcome-message"></h2>
+                <div class="header-buttons">
+                    <button id="bin-btn">Corbeille</button>
+                    <button id="logout-btn">Déconnexion</button>
+                </div>
+            </header>
+            
+            <div class="dashboard-content">
+                <div class="upload-area">
+                    <h3>Télécharger un nouveau document</h3>
+                    <input type="file" id="file-input">
+                    <button id="upload-btn">Télécharger</button>
+                    <div id="upload-progress-container" class="progress-container hidden">
+                        <div id="upload-progress-bar" class="progress-bar"></div>
+                    </div>
+                </div>
+
+                <div class="document-list">
+                    <h3>Vos documents</h3>
+                    <ul id="documents-container">
+                        </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="bin-view" class="hidden main-view">
+            <header class="header">
+                <h2>Corbeille</h2>
+                <div class="header-buttons">
+                    <button id="dashboard-btn">Retour</button>
+                    <button id="logout-btn-bin">Déconnexion</button>
+                </div>
+            </header>
+            
+            <div class="bin-content">
+                <div class="document-list">
+                    <h3>Documents supprimés</h3>
+                    <ul id="bin-documents-container">
+                        </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-storage-compat.js"></script>
+    
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-iFe6sL9tJNTxGNDe8AB9xFzWKLMRSv0",
+            authDomain: "sacadeau.firebaseapp.com",
+            projectId: "sacadeau",
+            storageBucket: "sacadeau.firebasestorage.app",
+            messagingSenderId: "924039661276",
+            appId: "1:924039661276:web:4256fb136497f3936e5619",
+            measurementId: "G-RKSYH0Q55G"
+        };
+        const firebaseApp = firebase.initializeApp(firebaseConfig);
+        const firebaseAuth = firebaseApp.auth();
+        const firestore = firebaseApp.firestore();
+        const firebaseStorage = firebaseApp.storage();
+
+        // --- Mappage des IDs d'utilisateur aux noms ---
+        const allowedUserIds = {
+            'lKVqqZaEY5PThD99ERqHJin7ZEP2': 'Papa',
+            'kEk26kSqpYeTbluc2bao9FI7rYX2': 'Maman'
+        };
+
+        // --- Éléments du DOM ---
+        const loginForm = document.getElementById('login-form');
+        const loginView = document.getElementById('login-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const binView = document.getElementById('bin-view');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const logoutBtn = document.getElementById('logout-btn');
+        const logoutBtnBin = document.getElementById('logout-btn-bin');
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        const documentsContainer = document.getElementById('documents-container');
+        const binDocumentsContainer = document.getElementById('bin-documents-container');
+        const authError = document.getElementById('auth-error');
+        const binBtn = document.getElementById('bin-btn');
+        const dashboardBtn = document.getElementById('dashboard-btn');
+        const uploadProgressContainer = document.getElementById('upload-progress-container');
+        const uploadProgressBar = document.getElementById('upload-progress-bar');
+        
+        let activeUnsubscribe = null;
+        let binUnsubscribe = null;
+
+        // --- Fonctions pour l'affichage de l'interface ---
+        function showDashboard(userName) {
+            loginView.classList.add('hidden');
+            binView.classList.add('hidden');
+            dashboardView.classList.remove('hidden');
+            welcomeMessage.textContent = `Bienvenue, ${userName} !`;
+        }
+
+        function showBin() {
+            dashboardView.classList.add('hidden');
+            loginView.classList.add('hidden');
+            binView.classList.remove('hidden');
+        }
+
+        function showLogin() {
+            dashboardView.classList.add('hidden');
+            binView.classList.add('hidden');
+            loginView.classList.remove('hidden');
+            // Unsubscribe from any active listeners to prevent memory leaks
+            if (activeUnsubscribe) activeUnsubscribe();
+            if (binUnsubscribe) binUnsubscribe();
+        }
+
+        // --- Vérification de l'authentification au chargement de la page ---
+        firebaseAuth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const userId = user.uid;
+                if (allowedUserIds[userId]) {
+                    showDashboard(allowedUserIds[userId]);
+                    fetchDocuments(userId);
+                } else {
+                    authError.textContent = 'Vous n\'êtes pas un utilisateur autorisé.';
+                    await firebaseAuth.signOut();
+                    showLogin();
+                }
+            } else {
+                showLogin();
+            }
+        });
+
+        // --- Gestion de la connexion de l'utilisateur (Firebase Auth) ---
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value;
+            const password = document.getElementById('password-input').value;
+            authError.textContent = 'Connexion en cours...';
+
+            try {
+                await firebaseAuth.signInWithEmailAndPassword(email, password);
+            } catch (error) {
+                authError.textContent = 'Échec de la connexion. Veuillez vérifier vos identifiants.';
+                console.error('Erreur Firebase :', error.message);
+            }
+        });
+
+        // --- Gestion de la déconnexion ---
+        const logoutHandlers = [logoutBtn, logoutBtnBin];
+        logoutHandlers.forEach(btn => {
+            btn.addEventListener('click', async () => {
+                await firebaseAuth.signOut();
+            });
+        });
+
+        // --- Navigation entre les vues ---
+        binBtn.addEventListener('click', () => {
+            showBin();
+            const userId = firebaseAuth.currentUser.uid;
+            fetchBinDocuments(userId);
+        });
+
+        dashboardBtn.addEventListener('click', () => {
+            showDashboard(welcomeMessage.textContent.split(', ')[1].replace(' !', ''));
+            const userId = firebaseAuth.currentUser.uid;
+            fetchDocuments(userId);
+        });
+        
+        // --- Récupération des documents actifs (Firestore) ---
+        function fetchDocuments(userId) {
+            if (activeUnsubscribe) activeUnsubscribe(); // Stop previous listener
+            activeUnsubscribe = firestore.collection('documents')
+                .where('userId', '==', userId)
+                .where('status', '==', 'active')
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(querySnapshot => {
+                    documentsContainer.innerHTML = '';
+                    if (querySnapshot.empty) {
+                        documentsContainer.innerHTML = '<p style="text-align:center;">Aucun document trouvé.</p>';
+                    }
+                    querySnapshot.forEach(doc => {
+                        const li = document.createElement('li');
+                        const docData = doc.data();
+                        const docId = doc.id;
+                        li.innerHTML = `
+                            <span class="document-name">${docData.documentName}</span>
+                            <div class="document-actions">
+                                <a href="${docData.fileUrl}" target="_blank" class="button view-btn">Télécharger</a>
+                                <button class="delete-btn" data-id="${docId}">Supprimer</button>
+                            </div>
+                        `;
+                        documentsContainer.appendChild(li);
+                    });
+                    document.querySelectorAll('.delete-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => deleteDocument(e.target.dataset.id));
+                    });
+                });
+        }
+        
+        // --- Récupération des documents supprimés (Firestore) ---
+        function fetchBinDocuments(userId) {
+            if (binUnsubscribe) binUnsubscribe(); // Stop previous listener
+            binUnsubscribe = firestore.collection('documents')
+                .where('userId', '==', userId)
+                .where('status', '==', 'deleted')
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(querySnapshot => {
+                    binDocumentsContainer.innerHTML = '';
+                    if (querySnapshot.empty) {
+                        binDocumentsContainer.innerHTML = '<p style="text-align:center;">La corbeille est vide.</p>';
+                    }
+                    querySnapshot.forEach(doc => {
+                        const li = document.createElement('li');
+                        const docData = doc.data();
+                        const docId = doc.id;
+                        li.innerHTML = `
+                            <span class="document-name">${docData.documentName}</span>
+                            <div class="document-actions">
+                                <button class="restore-btn" data-id="${docId}">Restaurer</button>
+                                <button class="permanent-delete-btn" data-id="${docId}" data-path="${docData.filePath}">Supprimer</button>
+                            </div>
+                        `;
+                        binDocumentsContainer.appendChild(li);
+                    });
+                    document.querySelectorAll('.restore-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => restoreDocument(e.target.dataset.id));
+                    });
+                    document.querySelectorAll('.permanent-delete-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => permanentlyDeleteDocument(e.target.dataset.id, e.target.dataset.path));
+                    });
+                });
+        }
+
+        // --- Fonctions de gestion des documents (Firestore) ---
+        async function deleteDocument(docId) {
+            const docRef = firestore.collection('documents').doc(docId);
+            await docRef.update({ status: 'deleted' });
+            alert('Document déplacé vers la corbeille.');
+        }
+
+        async function restoreDocument(docId) {
+            const docRef = firestore.collection('documents').doc(docId);
+            await docRef.update({ status: 'active' });
+            alert('Document restauré avec succès.');
+        }
+
+        async function permanentlyDeleteDocument(docId, filePath) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce document ? Cette action est irréversible.')) {
+                return;
+            }
+            
+            try {
+                const storageRef = firebaseStorage.ref(filePath);
+                await storageRef.delete();
+                
+                const docRef = firestore.collection('documents').doc(docId);
+                await docRef.delete();
+
+                alert('Document supprimé définitivement.');
+            } catch (error) {
+                console.error("Erreur de suppression:", error);
+                alert("Une erreur s'est produite lors de la suppression.");
+            }
+        }
+
+        // --- Téléchargement de documents (Cloud Storage & Firestore) ---
+        uploadBtn.addEventListener('click', () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Veuillez sélectionner un fichier à télécharger.');
+                return;
+            }
+
+            const userId = firebaseAuth.currentUser.uid;
+            const filePath = `${userId}/${file.name}-${Date.now()}`;
+            const storageRef = firebaseStorage.ref(filePath);
+            
+            const uploadTask = storageRef.put(file);
+            uploadProgressContainer.classList.remove('hidden');
+
+            uploadTask.on('state_changed', 
+                snapshot => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    uploadProgressBar.style.width = progress + '%';
+                },
+                error => {
+                    console.error('Erreur lors du téléchargement du fichier :', error.message);
+                    alert('Échec du téléchargement du fichier.');
+                    uploadProgressContainer.classList.add('hidden');
+                    uploadProgressBar.style.width = '0%';
+                },
+                () => {
+                    uploadTask.snapshot.ref.getDownloadURL().then(async (downloadURL) => {
+                        await firestore.collection('documents').add({
+                            userId: userId,
+                            filePath: filePath,
+                            documentName: file.name,
+                            fileUrl: downloadURL,
+                            status: 'active',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        alert('Document téléchargé avec succès !');
+                        fileInput.value = null;
+                        uploadProgressContainer.classList.add('hidden');
+                        uploadProgressBar.style.width = '0%';
+                    });
+                }
+            );
+        });
+    </script>
+</body>
+</html>        input[type="password"] {
             width: calc(100% - 24px);
             padding: 12px;
             margin: 10px 0;
