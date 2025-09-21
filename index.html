@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sacado</title>
+    <title>Sacado - Votre coffre-fort de documents</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
         
         :root {
-            --primary-color: #1abc9c;
-            --secondary-color: #34495e;
-            --background-color: #f0f2f5;
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --background-color: #ecf0f1;
             --card-background: #ffffff;
-            --text-color: #333;
+            --text-color: #34495e;
             --danger-color: #e74c3c;
-            --border-color: #ddd;
-            --progress-color: #3498db;
+            --success-color: #2ecc71;
+            --border-color: #bdc3c7;
+            --button-text-color: #ffffff;
         }
 
         body {
@@ -24,27 +25,29 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             color: var(--text-color);
         }
 
         #app-container {
-            width: 90%;
-            max-width: 800px;
+            width: 95%;
+            max-width: 900px;
             background-color: var(--card-background);
             border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             padding: 40px;
+            box-sizing: border-box;
         }
 
-        .auth-card, .main-view {
+        .view {
             text-align: center;
         }
 
         h2 {
             color: var(--secondary-color);
             font-weight: 600;
+            margin-bottom: 20px;
         }
 
         /* Form & Button Styles */
@@ -52,36 +55,51 @@
         input[type="password"],
         #file-input {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             margin: 10px 0;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             box-sizing: border-box;
             transition: all 0.3s ease;
+            font-size: 16px;
         }
         
         input[type="email"]:focus,
         input[type="password"]:focus,
         #file-input:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
             outline: none;
         }
 
-        button {
-            padding: 12px 20px;
+        .btn {
+            padding: 14px 25px;
             background-color: var(--primary-color);
-            color: white;
+            color: var(--button-text-color);
             border: none;
             border-radius: 8px;
             font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
             font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
-        button:hover {
-            background-color: #16a085;
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-full { width: 100%; }
+
+        .btn-danger { background-color: var(--danger-color); }
+        .btn-danger:hover { background-color: #c0392b; }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+        }
+        .btn-secondary:hover {
+            background-color: #34495e;
         }
 
         .error-message {
@@ -99,46 +117,46 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .header h2 { margin: 0; }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .header-buttons .btn { padding: 10px 15px; font-size: 14px; }
+
+        .dashboard-sections {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
         }
 
-        .header-buttons button {
-            width: auto;
-            margin-left: 10px;
-        }
-
-        #logout-btn, #logout-btn-bin {
-            background-color: var(--secondary-color);
-        }
-
-        #logout-btn:hover, #logout-btn-bin:hover {
-            background-color: #2c3e50;
+        .section-card {
+            background-color: #f9f9f9;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
         }
 
         .upload-area {
-            background-color: #f9f9f9;
-            border: 2px dashed var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
             text-align: center;
-            margin-bottom: 20px;
         }
-
-        #upload-btn {
-            margin-top: 15px;
-            width: auto;
-            min-width: 150px;
-        }
+        .upload-area input { margin-bottom: 20px; }
 
         .document-list ul {
             list-style: none;
             padding: 0;
+            margin: 0;
         }
 
         .document-list li {
-            background-color: #fafafa;
+            background-color: #ffffff;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 15px;
@@ -149,32 +167,32 @@
             flex-wrap: wrap;
         }
 
+        .document-info {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            flex-grow: 1;
+        }
         .document-name {
             font-weight: 600;
-            flex-grow: 1;
+        }
+        .document-date {
+            font-size: 12px;
+            color: #7f8c8d;
         }
 
         .document-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
             margin-top: 10px;
         }
         
-        .document-actions button, .document-actions a {
-            width: auto;
+        .document-actions .btn {
             padding: 8px 12px;
             font-size: 14px;
-            text-decoration: none;
-            text-align: center;
+            min-width: 80px;
         }
-
-        .restore-btn { background-color: #2ecc71; }
-        .restore-btn:hover { background-color: #27ae60; }
-        .delete-btn { background-color: var(--danger-color); }
-        .delete-btn:hover { background-color: #c0392b; }
-        .view-btn { background-color: #3498db; }
-        .view-btn:hover { background-color: #2980b9; }
 
         /* Progress Bar */
         .progress-container {
@@ -188,7 +206,7 @@
 
         .progress-bar {
             height: 100%;
-            background-color: var(--progress-color);
+            background-color: var(--primary-color);
             width: 0;
             transition: width 0.3s ease;
         }
@@ -198,36 +216,36 @@
 
     <main id="app-container">
         
-        <section id="login-view" class="auth-card main-view">
+        <section id="login-view" class="view">
             <h2>Accéder à votre Sacado</h2>
             <form id="login-form">
                 <input type="email" id="email-input" placeholder="Adresse email" required>
                 <input type="password" id="password-input" placeholder="Mot de passe" required>
-                <button type="submit">Se connecter</button>
+                <button type="submit" class="btn btn-full">Se connecter</button>
                 <p id="auth-error" class="error-message"></p>
             </form>
         </section>
 
-        <section id="dashboard-view" class="hidden main-view">
+        <section id="dashboard-view" class="hidden view">
             <header class="header">
                 <h2 id="welcome-message"></h2>
                 <div class="header-buttons">
-                    <button id="bin-btn">Corbeille</button>
-                    <button id="logout-btn">Déconnexion</button>
+                    <button id="bin-btn" class="btn btn-secondary">Corbeille</button>
+                    <button id="logout-btn" class="btn btn-danger">Déconnexion</button>
                 </div>
             </header>
             
-            <div class="dashboard-content">
-                <div class="upload-area">
+            <div class="dashboard-sections">
+                <div class="section-card upload-area">
                     <h3>Télécharger un nouveau document</h3>
                     <input type="file" id="file-input">
-                    <button id="upload-btn">Télécharger</button>
+                    <button id="upload-btn" class="btn">Télécharger</button>
                     <div id="upload-progress-container" class="progress-container hidden">
                         <div id="upload-progress-bar" class="progress-bar"></div>
                     </div>
                 </div>
 
-                <div class="document-list">
+                <div class="section-card document-list">
                     <h3>Vos documents</h3>
                     <ul id="documents-container">
                         </ul>
@@ -235,21 +253,19 @@
             </div>
         </section>
 
-        <section id="bin-view" class="hidden main-view">
+        <section id="bin-view" class="hidden view">
             <header class="header">
                 <h2>Corbeille</h2>
                 <div class="header-buttons">
-                    <button id="dashboard-btn">Retour</button>
-                    <button id="logout-btn-bin">Déconnexion</button>
+                    <button id="dashboard-btn" class="btn btn-secondary">Retour</button>
+                    <button id="logout-btn-bin" class="btn btn-danger">Déconnexion</button>
                 </div>
             </header>
             
-            <div class="bin-content">
-                <div class="document-list">
-                    <h3>Documents supprimés</h3>
-                    <ul id="bin-documents-container">
-                        </ul>
-                </div>
+            <div class="section-card document-list">
+                <h3>Documents supprimés</h3>
+                <ul id="bin-documents-container">
+                    </ul>
             </div>
         </section>
 
@@ -265,7 +281,6 @@
             apiKey: "AIzaSyA-iFe6sL9tJNTxGNDe8AB9xFzWKLMRSv0",
             authDomain: "sacado.firebaseapp.com",
             projectId: "sacado",
-            storageBucket: "sacado.appspot.com", // This is not used anymore
             messagingSenderId: "924039661276",
             appId: "1:924039661276:web:4256fb136497f3936e5619",
             measurementId: "G-RKSYH0Q55G"
@@ -275,11 +290,11 @@
         const firestore = firebaseApp.firestore();
 
         // --- Cloudinary Configuration ---
-        const CLOUDINARY_CLOUD_NAME = 'doehylsel'; // REPLACE with your Cloudinary Cloud Name
-        const CLOUDINARY_UPLOAD_PRESET = 'doehylsel'; // REPLACE with your upload preset name
+        const CLOUDINARY_CLOUD_NAME = 'doehylsel';
+        const CLOUDINARY_UPLOAD_PRESET = 'doehylsel'; 
 
         // --- Mappage des IDs d'utilisateur aux noms ---
-        const allowedUserIds = {
+        const userNames = {
             'lKVqqZaEY5PThD99ERqHJin7ZEP2': 'Papa',
             'kEk26kSqpYeTbluc2bao9FI7rYX2': 'Maman'
         };
@@ -310,7 +325,7 @@
             loginView.classList.add('hidden');
             binView.classList.add('hidden');
             dashboardView.classList.remove('hidden');
-            welcomeMessage.textContent = `Bienvenue, ${userName} !`;
+            welcomeMessage.textContent = `Bienvenue, ${userName || 'utilisateur'} !`;
         }
 
         function showBin() {
@@ -323,7 +338,6 @@
             dashboardView.classList.add('hidden');
             binView.classList.add('hidden');
             loginView.classList.remove('hidden');
-            // Unsubscribe from any active listeners to prevent memory leaks
             if (activeUnsubscribe) activeUnsubscribe();
             if (binUnsubscribe) binUnsubscribe();
         }
@@ -331,15 +345,9 @@
         // --- Vérification de l'authentification au chargement de la page ---
         firebaseAuth.onAuthStateChanged(async (user) => {
             if (user) {
-                const userId = user.uid;
-                if (allowedUserIds[userId]) {
-                    showDashboard(allowedUserIds[userId]);
-                    fetchDocuments(userId);
-                } else {
-                    authError.textContent = 'Vous n\'êtes pas un utilisateur autorisé.';
-                    await firebaseAuth.signOut();
-                    showLogin();
-                }
+                const userName = userNames[user.uid] || 'utilisateur';
+                showDashboard(userName);
+                fetchDocuments(user.uid);
             } else {
                 showLogin();
             }
@@ -376,7 +384,8 @@
         });
 
         dashboardBtn.addEventListener('click', () => {
-            showDashboard(welcomeMessage.textContent.split(', ')[1].replace(' !', ''));
+            const userName = userNames[firebaseAuth.currentUser.uid] || 'utilisateur';
+            showDashboard(userName);
             const userId = firebaseAuth.currentUser.uid;
             fetchDocuments(userId);
         });
@@ -397,11 +406,15 @@
                         const li = document.createElement('li');
                         const docData = doc.data();
                         const docId = doc.id;
+                        const date = docData.createdAt ? new Date(docData.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
                         li.innerHTML = `
-                            <span class="document-name">${docData.documentName}</span>
+                            <div class="document-info">
+                                <span class="document-name">${docData.documentName}</span>
+                                <span class="document-date">Ajouté le ${date}</span>
+                            </div>
                             <div class="document-actions">
-                                <a href="${docData.fileUrl}" target="_blank" class="button view-btn">Télécharger</a>
-                                <button class="delete-btn" data-id="${docId}">Supprimer</button>
+                                <a href="${docData.fileUrl}" target="_blank" class="btn view-btn">Télécharger</a>
+                                <button class="btn btn-danger delete-btn" data-id="${docId}">Supprimer</button>
                             </div>
                         `;
                         documentsContainer.appendChild(li);
@@ -428,11 +441,15 @@
                         const li = document.createElement('li');
                         const docData = doc.data();
                         const docId = doc.id;
+                        const date = docData.createdAt ? new Date(docData.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
                         li.innerHTML = `
-                            <span class="document-name">${docData.documentName}</span>
+                            <div class="document-info">
+                                <span class="document-name">${docData.documentName}</span>
+                                <span class="document-date">Déplacé le ${date}</span>
+                            </div>
                             <div class="document-actions">
-                                <button class="restore-btn" data-id="${docId}">Restaurer</button>
-                                <button class="delete-btn" data-id="${docId}">Supprimer</button>
+                                <button class="btn restore-btn" data-id="${docId}">Restaurer</button>
+                                <button class="btn btn-danger delete-btn" data-id="${docId}">Supprimer</button>
                             </div>
                         `;
                         binDocumentsContainer.appendChild(li);
